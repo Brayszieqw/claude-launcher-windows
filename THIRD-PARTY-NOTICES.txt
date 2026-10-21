@@ -1,0 +1,118 @@
+Third-party notices for Claude Launcher Windows 1.1.0
+
+Project code is released under MIT. Upstream notices and bundled component licenses are retained below.
+
+claude-switcher
+https://github.com/YOURSJEYO/claude-switcher/tree/d56cad06ae35e31b86dde96e7c8699f02378ef21
+Windows launcher foundation: environment checks, account snapshots and session guard.
+
+MIT License
+
+Copyright (c) 2026 Claude Switcher Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+MyIP
+https://github.com/jason5ng32/MyIP/tree/5502169374ccbb9ac7c3d70ac703ecbba3fa0813
+DNS provider protocols, response structures and font-metric probes.
+
+MIT License
+
+Copyright (c) 2026 Jason Ng
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+FuckClaude
+https://github.com/LinXiaoTao/FuckClaude/tree/e4aadac01d7a1456e98db71d4da34fe27b3bee52
+Font-width probing method.
+
+MIT License
+
+Copyright (c) 2026 LinXiaoTao (https://github.com/LinXiaoTao/FuckClaude)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+claude-env-check
+https://github.com/situker/claude-env-check/tree/f3ad0cf2622fc1d49f2b61ba563233ca29510613
+Diagnostic categories for routes, proxy configuration and TLS verification.
+
+MIT License
+
+Copyright (c) 2026 司徒K
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Microsoft.Web.WebView2 SDK 1.0.4258.31
+https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4258.31
+The unmodified Core, WPF and x64 Loader DLLs are bundled with their original license and notices in lib/WebView2/LICENSE.txt and lib/WebView2/NOTICE.txt. All five files match the official NuGet package. The separate WebView2 Runtime is installed by the user.
+
+Animation acknowledgements
+The hug animation, characters and scene were created for this project. Animation production method reference: https://github.com/mytjxs/codex-startup-animation . Movement reference: https://www.bilibili.com/video/BV19dJ66RE6P/ . Production tools include image generation, https://github.com/nihui/rife-ncnn-vulkan , OpenCV, NumPy and FFmpeg.
+
+External services and documentation
+FlClash and Claude Desktop are separately installed applications. IPCheck, IPPure, ipify, ipinfo, ipwho.is and DNS/STUN providers retain their service terms. The free IP-API DNS endpoint does not allow commercial use: https://ip-api.com/docs/dns .
+Protocol references: https://www.rfc-editor.org/rfc/rfc8489.html and https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/ .

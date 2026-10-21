@@ -1,215 +1,243 @@
 # Claude 启动助手 · Windows
 
-用于 Windows + FlClash + Claude Desktop 的启动助手。启动前检查代理、TUN、DNS 配置和 Claude 网络出口，启动后提供会话守护；另外包含网络诊断、设备特征检测、可选账号切换和夕照拥抱动画。
+让启动 Claude Desktop、检查网络环境、管理本地账号快照，都在一个窗口里完成。
 
-**[下载完整安装包](https://github.com/Brayszieqw/claude-launcher-windows/releases/latest)** · 当前版本：`1.0.0` · Windows x64 便携版
+这是面向 **Windows + FlClash + Claude Desktop** 的个人开源助手，使用 PowerShell、WPF 和 C# 实现。界面采用「夕照拥抱」主题，点击「拥抱一下」会播放动画并检查环境，也可独立点击「启动 Claude」。
 
-## 使用前准备
+**[下载 1.1.0 源码包](https://github.com/Brayszieqw/claude-launcher-windows/releases/tag/source-v1.1.0-20261021) · [下载旧版 1.0.0 便携包](https://github.com/Brayszieqw/claude-launcher-windows/releases/tag/v1.0.0) · [使用方法](#开始使用) · [开源来源与致谢](#开源来源与致谢) · [MIT 许可证](LICENSE)**
 
-**当前版本按 Starlink AS14593 核验启动出口。** 检测到其他运营商，或无法确认出口归属时，「启动 Claude」会保持锁定。IP 地址可以变化，地区仅作展示；其他运营商仍可使用诊断功能。
+> 当前源码版本为 **1.1.0**（2026-10-21 源码发布）。网络监测按 **Starlink AS14593** 核验出口，IP 变化、出口差异和 DNS 配置异常均只作提醒；不会自动结束、重启或锁定 Claude / Claude Code。
 
-| 项目 | 需要准备什么 |
+本仓库包含程序源码、构建脚本、测试和必要的第三方依赖。背景、人物、动画、图标原图及界面截图单独保留，不在源码仓库或源码 ZIP 中；无这些资源仍可构建和运行基础界面。
+
+## 可以做什么
+
+| 功能 | 说明 |
 | --- | --- |
-| 系统 | Windows 10 / 11 x64。 |
-| Claude Desktop | 先单独安装 Claude 桌面版。助手会识别 Microsoft Store 版及默认路径下的独立安装版。 |
-| FlClash | 保持代理内核运行，开启 TUN，并确认当前配置已生效。助手默认检查本地代理端口 `7890`。 |
-| Microsoft Edge | 用于设备特征和 WebRTC 检测。 |
-| WebView2 Runtime | 用于助手内的 IPCheck 深度 DNS 页面。安装包包含配套组件，运行时需在系统中安装。 |
-| Google Chrome（可选） | 用于 Chrome 交叉复测、语言与字体设置入口。 |
+| 启动前检查 | 检查代理内核、TUN、监听端口、FlClash 配置及 15 个官方固定域名和 DNS 缓存中发现的 Claude 子域名，每个目标分别检查显式代理和系统 / TUN 路径。 |
+| 全时段守护 | 登录自启和托盘常驻，网络异常时弹出独立提醒窗；每分钟重复，恢复后停止。后台不控制 Claude 进程。 |
+| 网络诊断 | 查看 IPv4、IPv6、UDP / STUN、WebRTC、DNS 解析器和网络归属；支持内嵌 IPCheck 深度 DNS。 |
+| 设备特征 | 用独立 Edge 配置采样浏览器特征，保存基准并比较变化。 |
+| 本地账号管理 | 新增、重命名账号标签，按需保存快照、切换和恢复。日常单账号使用无需切换。 |
+| 诊断记录 | 查看历史结果与差异，导出 JSON 或 Markdown。 |
+| 环境设置 | 提供 Windows 时区、区域格式、语言顺序，以及 Chrome 语言、字体和 IPPure 入口。 |
+| 夕照拥抱 | 自制角色与场景动画，10 秒、60 fps；播放结束不会自动启动 Claude。 |
 
-日常检测和启动无需以管理员身份运行助手。系统环境设置能否修改，取决于 Windows 权限与策略。
+## 运行环境
 
-## 第一次使用
+- Windows 10 / 11 **x64**，Windows PowerShell 5.1、.NET Framework 4.x、WPF 和系统自带的 `curl.exe`。
+- 已安装 Claude Desktop。优先识别 Microsoft Store 版，也兼容代码中列出的常见独立安装路径。
+- 已安装并运行 [FlClash](https://github.com/chen08209/FlClash)，开启 TUN。配置检查以 FlClash 0.9.1 的结构验证过。
+- 默认本机 HTTP 代理端口为 `7890`。
+- 设备特征与 WebRTC 探测需要 Microsoft Edge；内嵌 IPCheck 需要 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)。
 
-1. 打开上方下载页，在 **Assets** 中下载 `Claude-Launcher-Windows-1.0.0.zip`。选择这个安装包，GitHub 自动生成的 `Source code` 压缩包不包含可运行程序。
-2. 将 ZIP **完整解压**到固定文件夹，例如 `D:\Apps\ClaudeLauncher`。保留目录内的脚本、组件和资源，不要只取出 EXE，也不要直接在压缩包内运行。
-3. 打开 FlClash，选好要使用的配置和节点，开启 TUN，等待配置应用完成。当前启动检查要求 Claude 的实际出口属于 Starlink AS14593。
-4. 双击解压目录中的 `ClaudeLauncher.exe`，进入「概览」。
-5. 点击 **「拥抱一下」**。它会同时运行基础检查和播放约 10 秒的动画；基础检查每轮最多 30 秒，以页面结果为准。
-6. 点击 **「查看检查明细」**查看结果。出现「启动条件通过」后，**「启动 Claude」**按钮会解锁；有问题时按明细处理，再点击 **「重新检测」**。
-7. 点击 **「启动 Claude」**。助手会在启动前再次核验，然后打开 Claude Desktop，并自动开启会话守护。首次使用 Claude 时，在 Claude 窗口内完成登录。
+日常运行无需 Python、Node.js 或 FFmpeg。一般检测与启动无需管理员权限；手动修改 Windows 设置时，以系统实际权限为准。
 
-动画结束后仍需手动点击「启动 Claude」。「重新检测」可以单独重跑基础检查。
+## 开始使用
 
-之后日常使用按这个顺序即可：**开启 FlClash 和 TUN → 打开助手 → 拥抱一下 / 重新检测 → 启动 Claude**。只有一个账号时，无需操作「账号管理」。
+### 从当前源码开始
 
-### 创建桌面快捷方式（可选）
+1. 下载上方 **1.1.0 源码 ZIP** 并完整解压，或克隆本仓库。
+2. 在源码目录打开 **Windows PowerShell 5.1**，执行下方构建命令。
+3. 打开 FlClash，确认 TUN 已启用，本机代理端口与助手设置一致。
+4. 双击构建生成的 ClaudeLauncher.exe；保留同目录脚本、lib、launcher 和 probe。
+5. 在「重新检测」或「拥抱一下」查看结果；源码包未附动画，检测功能照常运行。
+6. 点击「启动 Claude」即可打开；网络异常只提醒，不作为启动锁。
 
-进入完整解压后的文件夹，在资源管理器地址栏输入 `powershell` 并回车，然后执行：
+旧版 1.0.0 便携包仍可从历史 Release 下载，但不包含本次 1.1.0 的持续提醒改动。需要当前行为，请构建本仓库源码。
+
+`Start.cmd` 也是启动入口。请保留整个解压目录，单独复制 EXE 无法运行。
+
+如果需要桌面快捷方式，在解压目录打开 Windows PowerShell，运行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-桌面会出现「Claude 启动助手」快捷方式。它指向当前解压目录；以后移动目录，需要在新位置重新执行一次。
+安装脚本只创建快捷方式；已有同名快捷方式会先备份。程序目录移动后，重新运行一次即可。
 
-## 基础检查怎么看
+### 使用其他本地代理端口
 
-概览页展示 5 项摘要，展开明细可以看到具体失败原因及 FlClash / DNS 配置检查结果。
-
-| 检查项 | 核对内容 |
-| --- | --- |
-| Claude 桌面版 | 是否找到可启动的 Claude Desktop。 |
-| 代理内核 | 是否检测到支持的代理内核运行。 |
-| TUN 网卡 | 代理网卡是否启用，是否存在对应的 IPv4 默认路由或分割路由。 |
-| 本地代理端口 | 默认 `127.0.0.1:7890` 是否由代理内核监听。 |
-| 代理 HTTPS 出口 | `claude.ai`、`claude.com` 经显式代理及系统 / TUN 的共 4 条路径，是否都能核验为 AS14593。 |
-
-明细中的状态含义：
-
-| 状态 | 如何处理 |
-| --- | --- |
-| 已核对 | 该项检查已完成并通过。 |
-| 需处理 | 发现失败或明确差异，按该行说明处理。 |
-| 请核对 | 有需要人工确认的配置或差异，展开查看依据。 |
-| 未验证 | 缺少证据、请求超时或检测未完成；若属于启动必需项，需要重新检测通过后才能启动。 |
-| 信息 | 补充说明，不能当作已通过的结果。 |
-
-**「记录本次核验」**会重新检查出口，并为当前账号保存本次出口摘要。它是可选记录功能，后续仍按 AS14593 核验，不会把启动条件锁定到某一个 IP。
-
-### 会话守护如何工作
-
-通过助手启动 Claude 时，会话守护自动开启：
-
-- 本地检查每轮完成后等待 2 秒，再检查代理内核、TUN 和监听端口。
-- 出口核验在后台独立执行，每轮完成后等待 60 秒，再进行下一轮。
-- **代理内核、TUN 或端口失效，或确认出现非 AS14593 出口时，会关闭 Claude 桌面进程。未发送的输入可能丢失，使用中请保持 FlClash 和 TUN 开启。**
-- 出口查询超时、限流或归属暂时无法确认时，守护记录「未验证」并等待下轮复测；仅这类查询故障不会关闭已运行的 Claude。
-
-关闭助手窗口后，守护仍会继续；Claude 桌面进程完全退出后，守护自动结束。守护采用轮询，检查间隔内的流量不受它实时拦截。
-
-## 其他功能怎么用
-
-### 网络检测
-
-打开侧栏「网络检测」，按需要选择：
-
-| 按钮 | 用法与结果 |
-| --- | --- |
-| 检查 FlClash / DNS | 读取本地保存设置、当前脚本绑定和生成配置，核对 TUN、严格路由、DNS 接管与覆写关系。展开结果查看问题位置；该操作不会替你修改配置。 |
-| IPCheck 深度 DNS | 在助手内打开 IPCheck，按原站提示登录并执行检测，查看实际解析器和 ECS 等结果。 |
-| Chrome 交叉复测 | 在 Chrome 打开 BrowserLeaks DNS 检测页，按网页提示开始测试，用于对照浏览器的 DNS 结果。 |
-| 检测网络画像 | 查看多来源出口、Claude 连通性、DNS、IP 信誉和服务状态。界面预计通常需要 30–120 秒；服务连续超时时可能更久。 |
-| 开始深度检测 | 确认后分别探测 HTTPS、IPv6、UDP / STUN 和独立 Edge 的 WebRTC 出口，通常需要 20–60 秒。 |
-
-结果较多时，可搜索名称、内容或来源，也可勾选「只看待核对 / 未验证」；展开「来源与测量细节」查看依据。
-
-深度检测与网络画像用于排查，完成它们不会自动解锁启动按钮。回到「概览」运行基础检查即可判断是否能启动；打开外部检测页面也不会自动把网页结果记为通过。
-
-### 设备特征
-
-1. 打开「设备特征」，点击 **「检测设备特征」**，查看本次采样结果。
-2. 确认当前设备环境适合作为对照后，点击 **「采集并记住基准」**。
-3. 以后再次检测，可查看与已保存基准相比的变化；普通检测不会自动覆盖基准。
-
-该功能使用独立临时 Edge 配置，采集 20 项本地特征。时区、语言、区域格式和 UTC 偏移另行展示；设备特征结果不参与启动判断。需要核对日常 Chrome 的网页表现时，使用下面的 Chrome 设置和复测入口。
-
-### 环境设置
-
-打开「环境设置」，点击 **「读取当前设置」**，再按需要操作：
-
-- **修改 Chrome 语言**：打开 Chrome 的语言设置，在其中调整首选语言。
-- **修改 Chrome 字体**：打开 Chrome 字体设置，调整默认字体。
-- **在 Chrome 复测 IPPure**：打开检测页后，确认使用的是刚才修改的 Chrome 配置文件，再等待结果或重新扫描。
-- **应用时区 / 应用格式 / 设为首选**：分别调整系统时区、当前 Windows 用户的区域格式、已配置语言的顺序。应用前会显示变更摘要，并保存原设置记录。
-- **Windows 语言设置 / Windows 日期与时间**：进入系统设置，处理语言包、显示语言或自动时区。
-
-系统设置会影响其他应用，按自己的实际需要修改即可。IPPure 分数不作为助手的启动条件；调整 Chrome 默认字体也不会隐藏系统已安装的字体。
-
-## 账号管理（可选）
-
-默认使用当前 Claude 登录状态。正常检查和启动不会复制或替换登录数据；需要保留多个本地登录状态时，再使用账号切换。
-
-### 新增并切换到另一个账号
-
-1. 打开「账号管理」，点击 **「新增账号」**，输入名称，例如「备用账号」。名称是本地标签，长度为 1–32 个字符，不能与已有名称重复。
-2. 新增完成后，点击目标账号卡片。此时只是选中，当前 Claude 登录状态仍保持原样。
-3. 保存 Claude 中的工作，并退出正在使用的 Claude Code。
-4. 点击 **「切换到选中账号」**，阅读弹窗并确认。助手会先核验启动条件和可用空间，再关闭 Claude Desktop、保存当前状态、校验并切换数据。
-5. 首次切换到新建账号时，还没有该账号的登录快照。完成切换后，回「概览」检查并启动 Claude，在 Claude 窗口内登录这个账号。
-6. 以后切换到其他账号时，当前账号的状态会被保存；切回时恢复已保存的快照。切换完成后仍需回「概览」检查并启动 Claude。
-
-「重命名」只修改助手中的名称。「正在使用」表示当前数据所属账号；「已选中」表示准备操作的卡片，两者可能不同。
-
-### 切换中断时恢复
-
-进入 **「说明」→「恢复…」**，确认后恢复上次切换前的数据。恢复前的现有数据也会另行保留。恢复完成后，回「概览」重新检查并启动。
-
-账号快照包含本地登录状态，请妥善保管，不要把快照目录作为问题附件公开上传。没有可恢复记录时，程序会给出提示。
-
-## 诊断记录与本地数据
-
-完成基础检查、FlClash 检查、网络画像、深度检测或设备特征检测后，会自动保存相应记录。
-
-需要查看或导出时：
-
-1. 打开 **「诊断记录」**，点击 **「刷新记录」**。
-2. 从下拉列表选中一条记录，查看采集时间、详细结果，以及与上一次同类检测的比较。
-3. 点击 **「导出报告」**，选择保存位置。可导出便于阅读的 Markdown（`.md`），或保留结构化数据的 JSON（`.json`）。
-
-报告中的 IP 会用摘要显示，但仍包含设备与网络归属信息，分享前先查看内容。
-
-助手数据目录为：
+设置文件为：
 
 ```text
-%LOCALAPPDATA%\ClaudeSwitcherWindows
+%LOCALAPPDATA%\ClaudeSwitcherWindows\settings.json
 ```
 
-可以按 `Win + R` 粘贴此路径打开，也可以点击 **「说明」→「打开状态目录」**。
-
-| 文件或目录 | 用途 |
-| --- | --- |
-| `accounts` | 账号快照。 |
-| `account-state.json` | 账号名称、当前账号与快照位置。 |
-| `diagnostics` | 历次诊断记录。 |
-| `fingerprint-baseline.json` | 已保存的设备特征基准。 |
-| `guard.log` / `guard-observations.jsonl` | 守护操作与出口观察记录，可用于排查 Claude 被关闭的原因。 |
-| `environment-settings` | 修改环境设置前保存的原设置记录。 |
-| `settings.json`（可选） | 本地代理端口等设置；不存在时使用默认端口 `7890`。 |
-
-上述文件会按实际使用的功能生成，首次运行时可能还没有。
-
-## 常见问题
-
-| 遇到的情况 | 处理方法 |
-| --- | --- |
-| 「启动 Claude」一直是灰色 | 先在本次打开的助手窗口中完成基础检查，再展开「查看检查明细」。历史记录或深度检测结果不会解锁它。 |
-| 提示「未找到 Claude 桌面版」 | 确认安装了 Claude Desktop，并能从 Windows 开始菜单打开。当前自动识别 Microsoft Store 版及默认安装路径；自定义安装位置可能无法识别。 |
-| TUN 已开启，检查仍不通过 | 查看是否检测到代理网卡及 IPv4 路由。等 FlClash 应用配置后重测；仅开启系统代理不足以满足当前检查。 |
-| FlClash / DNS 配置未通过 | 到「网络检测」点击「检查 FlClash / DNS」，展开问题行和「升级后怎么检查、怎么修复」。严格路由需要同时加入覆写项并开启；使用脚本模式时，还要确认当前配置绑定了实际存在的脚本。 |
-| 显示非 Starlink / 非 AS14593 | 当前版本不会放行该出口。核对 FlClash 中 Claude 的实际路由与节点，处理后重新检测。 |
-| 出口显示「未验证」或 30 秒超时 | 查看失败路径，确认代理可用后稍后重测。当前结果不足以通过启动检查，点击「记录本次核验」也不能跳过该条件。 |
-| 使用中 Claude 被关闭 | 打开状态目录查看 `guard.log`，核对是否出现代理、TUN、端口失效或非星链出口；处理后重新检查并启动。 |
-| IPCheck 页面打不开 / 设备特征检测失败 | 分别核对 WebView2 Runtime / Microsoft Edge 是否安装，并根据页面错误处理。IPCheck 首次使用还需按原站提示登录。 |
-| 拥抱动画没播放，只显示静态画面 | Windows 关闭动画效果或视频播放失败时会直接显示最后一帧，基础检查照常进行。 |
-| 提示缺少文件，或移动后快捷方式失效 | 重新完整解压安装包；不要只移动 EXE。移动整个目录后，在新目录重新运行 `install.ps1` 创建快捷方式。 |
-
-<details>
-<summary>FlClash 使用的端口不是 7890，怎么设置？</summary>
-
-1. 在 FlClash 中确认实际使用的 HTTP / 混合代理端口。
-2. 先完全退出 Claude Desktop 和助手，等会话守护结束。
-3. 打开 `%LOCALAPPDATA%\ClaudeSwitcherWindows`。如果已有 `settings.json`，先复制一份备份，然后只修改其中的 `ProxyPort` 数字，保留其他字段。
-4. 如果文件不存在，用记事本新建 `settings.json`，保存类型选「所有文件」，编码选 UTF-8，避免保存为 `settings.json.txt`。
-
-例如实际端口为 `7897` 时，新文件可写为：
+如果文件不存在，可以创建：
 
 ```json
 {
-  "ProxyPort": 7897,
-  "EgressHash": "",
-  "Country": ""
+  "ProxyPort": 7890
 }
 ```
 
-请把 `7897` 替换成自己的实际端口，保持数字形式。保存后重新打开助手并运行基础检查；此设置只改变助手使用的代理端口，不会替你修改 FlClash 的端口。
+将数字改为 FlClash 实际使用的 HTTP / Mixed 端口。已有文件请先备份，只修改 `ProxyPort`，保留其他字段。
 
-</details>
+### 网络与设备检查
 
-## 致谢与许可
+- **基础检查**：显示本机与网络状态，HTTPS 阶段独立最多 60 秒，通过提前结束；含准备阶段的整体期限为 75 秒。异常或超时不锁定启动。
+- **开始深度检测**：比较 HTTPS、IPv6、UDP / STUN 与独立 Edge WebRTC 路径。
+- **检测网络画像**：查看出口、ASN、DNS 解析器、第三方评分与服务状态；多个服务依次超时时会比较慢。
+- **IPCheck 深度 DNS**：在内嵌窗口访问原站，首次可能需要自行登录；登录、额度和结果由 IPCheck 提供。
+- **设备特征**：查看采样结果，需要比较变化时再点击「采集并记住基准」。
 
-项目基础来自 [claude-switcher](https://github.com/YOURSJEYO/claude-switcher)；网络与字体检测参考 [MyIP](https://github.com/jason5ng32/MyIP)、[FuckClaude](https://github.com/LinXiaoTao/FuckClaude)，检查分类参考 [claude-env-check](https://github.com/situker/claude-env-check)。内嵌网页使用 Microsoft WebView2。
+网页检测结果只作诊断展示。DNS 地址数量、第三方评分和 IP 变化应结合路径判断；未验证会直接显示出来。
 
-动画自行制作，制作方法参考 [codex-startup-animation](https://github.com/mytjxs/codex-startup-animation)。
+### 可选的账号切换
 
-采用 [MIT 许可证](LICENSE)，第三方许可原文随安装包保留。在线检测服务按各自条款使用；IP-API 免费 DNS 接口限非商业用途。本项目与 Anthropic 无隶属关系。
+「主账号」是当前本地会话的标签。新增账号、重命名和选择卡片只修改助手记录。
+
+主动点击「切换到选中账号」并确认后，助手会检查环境和磁盘空间，关闭 Claude Desktop，校验并保存当前数据，再载入目标快照。新账号没有快照时，需要自行登录。切换后回到概览检查，再启动 Claude。
+
+切换中断时，使用「恢复上次切换前的数据」。快照和切换前的备份会保留，需要足够磁盘空间；它们含登录状态，不要上传到 GitHub。此功能一次使用一个账号，不管理 Claude Code 的账号。
+
+## 全时段守护与数据位置
+
+首次打开助手会建立当前用户的登录启动快捷方式，并启动监测。Windows 登录后先收起到托盘；关闭主窗口也会收起到托盘，提示仍会继续。双击托盘图标或重新双击 EXE 可以恢复窗口。「退出界面（停止弹窗）」明确退出提示界面，后台检测继续，重新打开助手后恢复弹窗。
+
+后台每轮本地检查后等待 2 秒。网络核验正常后等待 60 秒再测，异常或证据不完整时等待 15 秒再测。HTTPS 阶段最多 60 秒，证据齐全就提前结束。检测进程不枚举、结束、挂起、重启或激活 Claude / Claude Code。
+
+### 收到警报时
+
+1. 提示窗显示具体原因；正在使用的 Claude 和编程会话继续运行，主页面不会自动切换。
+2. 尚未恢复时，每 1 分钟再次提示并发出系统提示音。只有一个提示窗，不叠加多个窗口，也不主动抢键盘焦点。
+3. 关闭提示窗或选择「稍后提醒（1 分钟）」只延后提醒，不视为异常已解除。
+4. 点击「查看详情」，或从「网络检测」第四项「实时监测」查看原因。可点「立即重新检查」，也可等待自动核验。
+5. 网络恢复正常后自动停止提醒。IP 发生变化但仍为星链、同轮出口一致时会明确注明；后续一轮保持稳定后停止该变化提醒。
+
+超时、限流、无效响应和配置无法读取显示「检测受限」，不宣称已经发生 DNS 泄露。提示频率与后台测量频率分别计算。
+
+### 域名覆盖与检测边界
+
+固定目标为 `claude.ai`、`claude.com`、`api.anthropic.com`、`anthropic.com`、`a-api.anthropic.com`、`a-cdn.anthropic.com`、`s-cdn.anthropic.com`、`assets-proxy.anthropic.com`、`a.claude.ai`、`assets.claude.ai`、`downloads.claude.ai`、`platform.claude.com`、`mcp-proxy.anthropic.com`、`bridge.claudeusercontent.com`、`code.claude.com`。
+
+动态发现包括 `anthropic.com`、`claude.ai`、`claude.com`、`claude.app`、`claudeusercontent.com`、`claudemcpcontent.com` 及其子域名。每轮从 Windows DNS 缓存读取真实出现的名称，并使用完整域名边界匹配。网页和 API 的六条路径必须实测通过；资源域名若明确返回 404，仅在能够按顺序解析本机分流规则、确认与 API 指向同一策略时采用路由证据，并以提醒项显示。该结果不等于独立测得资源请求的公网 IP；否则显示未验证并提醒；不限制新启动和现有会话。早于域名规则的未知规则、直连规则或规则集不能跳过。
+
+清单依据 [Claude Desktop 网络要求](https://code.claude.com/docs/en/desktop) 和 [Claude Code 网络配置](https://code.claude.com/docs/en/network-config)。自定义 MCP、第三方模型网关、GitHub / npm、第三方遥测和资源 CDN 可以使用任意域名；本版本没有把这些共享第三方域名纳入星链出口判定，也不能发现应用自行使用 DoH 且未进入系统 DNS 缓存的名称。不能把这份清单理解为穷尽未来的一切网络请求。
+
+DNS 守护核验 FlClash 的 DNS 启用、严格路由、UDP / TCP 53 接管，以及是否存在独立直连 DNS 上游。它是配置层检查，不能证明所有应用的加密 DNS 都没有旁路；实际解析器观察仍在网络诊断和浏览器 DNS 检测中。监测不操作本机、WSL 或虚拟机中的应用进程。
+
+守护采用轮询，没有安装防火墙规则，检测间隔内可能已有流量发出。助手不会自动修改 FlClash、代理、DNS 或账号登录文件。
+
+助手状态默认保存在 `%LOCALAPPDATA%\ClaudeSwitcherWindows`：
+
+| 路径 | 内容 |
+| --- | --- |
+| `settings.json` | 本机代理端口。 |
+| `account-state.json`、`accounts/` | 本地账号标签、快照与校验记录。 |
+| `pending-switch.json` | 切换事务与恢复信息。 |
+| `diagnostics/` | 历史诊断与导出依据。 |
+| `fingerprint-baseline.json` | 用户主动保存的设备特征摘要。 |
+| `address-key.txt` | 本机地址摘要密钥。 |
+| `guard.*`、`guard-observations.jsonl` | 守护状态和日志。 |
+| `ipcheck-webview/` | IPCheck 内嵌浏览器的登录与网页存储。 |
+| `environment-settings/` | 手动修改 Windows 设置前的备份。 |
+
+切换前的 Claude 数据还会保留在原数据目录旁的 `Claude.switcher-backup-*` 目录中。检测功能本身不修改系统网络设置；「环境设置」里确认应用的操作会改变对应 Windows 选项。
+
+## 从源码构建
+
+```powershell
+git clone https://github.com/Brayszieqw/claude-launcher-windows.git
+cd claude-launcher-windows
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
+.\ClaudeLauncher.exe
+```
+
+请使用 **Windows PowerShell 5.1** 运行构建脚本。脚本调用 Windows 自带的 .NET Framework 编译器，生成图标和 `ClaudeLauncher.exe`；已有 EXE 和图标会先备份。缺少人物图标原图时使用 Windows 通用应用图标。WebView2 SDK 文件和原始许可已包含，无需额外还原 NuGet 包。
+
+| 文件 / 目录 | 作用 |
+| --- | --- |
+| `SwitcherUI.ps1` | WPF 界面、页面交互与动画播放。 |
+| `claude-switch.ps1` | 应用识别、启动检查、账号快照与恢复。 |
+| `claude-bodyguard.ps1`、`guard-runtime.ps1` | 常驻监测、域名覆盖、IP 变化提醒和手动复查。 |
+| `network-probes.ps1` | HTTPS、ASN、STUN、WebRTC 等探测。 |
+| `flclash-checks.ps1` | FlClash 配置检查和浏览器入口。 |
+| `environment-insights.ps1` | 网络画像、设备特征与环境设置。 |
+| `diagnostic-reports.ps1` | 诊断存储、比较和导出。 |
+| `launcher/` | C# 启动器、任务栏标识与 IPCheck 窗口。 |
+| `probe/` | 浏览器探针、IPCheck 主题和只读配置查询。 |
+| `assets/`（自行提供，可选） | 不随源码上传的角色图标、夕照场景和拥抱动画。 |
+| `lib/WebView2/` | WebView2 SDK 1.0.4258.31 及原始许可证。 |
+| `tests/` | 离线、回环服务与界面检查。 |
+| `tools/build-hug-motion.py` | 动画制作工具，日常运行和 EXE 构建不调用。 |
+
+重制动画时才需要 Python、OpenCV、NumPy 和 FFmpeg。制作脚本接受原始 `1586 × 992 / 30 fps / 300 帧` 视频并输出 60 fps 文件；已制作的 60 fps 成片不能作为该脚本的原始输入；本源码包不附原始素材或成片。
+
+### 可选的美术资源
+
+基础功能不依赖美术资源。若有自己的素材，可按以下路径加入本地目录：
+
+- `assets/launcher-character.png`：应用图标原图，加入后重新运行构建。
+- `assets/hug/background.png`：背景。
+- `assets/hug/pose-01.png`、`assets/hug/pose-15.png`：起始与结束姿势。
+- `assets/hug/hug-motion.mp4`：10 秒、60 fps 的 H.264 动画。
+
+这些路径已加入 `.gitignore`。没有媒体资源时不播放角色动画，不影响网络检测与启动。
+
+### 验证
+
+在仓库根目录运行：
+
+```powershell
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Offline.Tests.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\FlClash.Tests.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Insights.Tests.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Starlink.Tests.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Guard.Tests.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Guard-Smoke.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Guard-Readiness.Smoke.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\Window-Smoke.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\RoundBudget.Tests.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\UI-Smoke.ps1
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\tests\SourcePackage.Smoke.ps1
+```
+
+先构建，再运行上述检查。它们使用临时状态、模拟数据或回环服务。`HugPlayback.Smoke.ps1` 和 `EmbeddedDns.Smoke.ps1` 的原有视觉断言需自行提供美术资源；媒体制作测试另需 Python 依赖。发布验证结果见 [VALIDATION.md](VALIDATION.md)；它们不代表外部服务或账号状态。
+
+## 常见问题
+
+**启动按钮为什么不能点？**
+
+检测、账号操作或拥抱动画进行期间，部分按钮会暂时禁用，结束后恢复。当前 1.1.0 不因网络异常锁定启动；旧版 1.0.0 便携包仍使用旧规则。
+
+**网络能用，为什么还显示未验证？**
+
+检测服务可能超时、限流或返回无法解析的内容。这表示尚未取得证据，不等于网络已坏；正在运行的 Claude 不会仅因此被结束。检测结果与是否启动相互独立，手动复查完成后会自动刷新基础检查。
+
+**动画不能播放怎么办？**
+
+确认完整解压、`assets/hug/hug-motion.mp4` 存在，系统支持 H.264 播放。系统关闭动画效果、媒体打不开或播放停滞时，会显示最后一帧并恢复操作。
+
+**升级怎么做？**
+
+保留旧程序目录作为备份，将新版解压到新目录，再重新创建快捷方式。状态目录独立保存，通常无需复制进程序目录。
+
+**怎么反馈问题？**
+
+在 [Issues](https://github.com/Brayszieqw/claude-launcher-windows/issues) 写明系统、版本、操作和报错；分享报告前检查其中的本机信息。不要附上账号快照、密钥或整个状态目录。
+
+## 开源来源与致谢
+
+感谢这些项目提供的源码和思路：
+
+| 项目 | 本项目使用或参考的部分 | 许可证 |
+| --- | --- | --- |
+| [YOURSJEYO/claude-switcher](https://github.com/YOURSJEYO/claude-switcher/tree/d56cad06ae35e31b86dde96e7c8699f02378ef21) | Windows 启动检查、会话守护、账号快照的初始基础，随后适配 FlClash、商店版 Claude 和当前界面。 | MIT |
+| [jason5ng32/MyIP](https://github.com/jason5ng32/MyIP/tree/5502169374ccbb9ac7c3d70ac703ecbba3fa0813) | DNS 探测协议与返回结构、网络信息展示及字体测量方法。 | MIT |
+| [LinXiaoTao/FuckClaude](https://github.com/LinXiaoTao/FuckClaude/tree/e4aadac01d7a1456e98db71d4da34fe27b3bee52) | 字体宽度探测方法。 | MIT |
+| [situker/claude-env-check](https://github.com/situker/claude-env-check/tree/f3ad0cf2622fc1d49f2b61ba563233ca29510613) | 网络路径、代理配置与 TLS 检查的分类思路。 | MIT |
+| [Microsoft WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4258.31) | 内嵌 IPCheck 网页窗口，随包提供 Core、WPF 和 x64 Loader。 | SDK 原始许可证随包保留 |
+
+动画由本项目自行制作，制作方法参考 [mytjxs/codex-startup-animation](https://github.com/mytjxs/codex-startup-animation)；动作参考 [Bilibili 视频](https://www.bilibili.com/video/BV19dJ66RE6P/)。制作过程中使用了图像生成、[RIFE / ncnn](https://github.com/nihui/rife-ncnn-vulkan)、OpenCV、NumPy 和 FFmpeg。
+
+同时感谢 FlClash，以及 IPCheck、IPPure、ipify、ipinfo、ipwho.is 等提供的工具和服务。
+
+## 开源协议
+
+本项目采用 **[MIT License](LICENSE)**，允许使用、修改、分发和商业使用；分发时请保留版权及许可声明。上游代码的完整声明收录在 [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)，WebView2 原始许可证与声明位于 [lib/WebView2](lib/WebView2)。
+
+在线服务另有使用条款。例如 [IP-API 免费 DNS 接口](https://ip-api.com/docs/dns)不允许商业使用，商业部署时需要替换该接口或另行取得服务授权。
+
+这是个人社区项目，与 Anthropic 没有隶属或官方合作关系。Claude 等名称和商标归各自权利人所有。

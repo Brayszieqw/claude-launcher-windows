@@ -1,0 +1,38 @@
+# Generated launcher and build backups
+/ClaudeLauncher.exe
+*.backup-*
+*.pdb
+__pycache__/
+*.py[cod]
+
+# Local work and release archives
+/work/
+/outputs/
+/dist/
+*.zip
+
+# Runtime state must never be committed
+/ClaudeSwitcherWindows/
+/accounts/
+/diagnostics/
+/ipcheck-webview/
+/environment-settings/
+/settings.json
+/account-state.json
+/pending-switch.json
+/fingerprint-baseline.json
+/address-key.txt
+/guard.*
+/guard-observations.jsonl
+/launcher-errors.log
+*.lock
+.env
+.env.*
+
+# Artwork is distributed separately; source uploads exclude media.
+/assets/
+/docs/*.png
+/docs/*.jpg
+/launcher.ico
+/guard-*.json
+/guard-*.log

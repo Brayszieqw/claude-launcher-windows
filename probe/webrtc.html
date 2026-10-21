@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>本地浏览器探测</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; connect-src http://127.0.0.1:*">
+<body>正在本地检测；不申请麦克风或摄像头权限。
+<script>
+'use strict';
+const config = __CONFIG__;
+const result = { Candidates: [], Errors: [], TimedOut: false, Error: '' };
+let peer;
+let finished = false;
+let timer;
+async function hashBytes(bytes) {
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
+    byte => byte.toString(16).padStart(2, '0')).join('');
+}
+async function collectFingerprint() {
+  const fingerprint = { Schema: 2, Errors: {} };
+  const stable = value => JSON.stringify(value);
+  const digest = value => hashBytes(new TextEncoder().encode(stable(value)));
+  // An unavailable browser API is one missing measurement, not a failed whole scan.
+  async function measure(key, probe) {
+    try { fingerprint[key] = await probe(); }
+    catch (error) { fingerprint[key] = ''; fingerprint.Errors[key] = error.name || 'API unavailable'; }
+  }
+  fingerprint.Browser = navigator.userAgent;
+  fingerprint.Platform = navigator.platform;
+  fingerprint.Screen = `${screen.width} × ${screen.height} / 可用 ${screen.availWidth} × ${screen.availHeight} / ${screen.colorDepth} bit / DPR ${devicePixelRatio} / 触摸点 ${navigator.maxTouchPoints}`;
+  fingerprint.Hardware = `逻辑线程 ${navigator.hardwareConcurrency ?? '未知'} / 浏览器报告内存 ${navigator.deviceMemory ?? '未知'} GB`;
+  fingerprint.Privacy = `Cookie 支持 ${navigator.cookieEnabled} / DNT ${navigator.doNotTrack ?? '未设置'} / GPC ${navigator.globalPrivacyControl ?? '未提供'}`;
+  fingerprint.Automation = `webdriver=${navigator.webdriver} / Headless UA=${/Headless/i.test(navigator.userAgent)}；此处描述工具自己的探测环境`;
+  await measure('ClientHints', async () => {
+    if (!navigator.userAgentData) throw new Error('UA-CH unavailable');
+    const hints = await navigator.userAgentData.getHighEntropyValues(['architecture', 'bitness', 'platformVersion', 'fullVersionList', 'model']);
+    // GREASE brands can change between launches; compare only the real browser brands.
+    return stable({ platform: hints.platform, architecture: hints.architecture, bitness: hints.bitness,
+      platformVersion: hints.platformVersion, model: hints.model,
+      versions: hints.fullVersionList.filter(b => /^(Chromium|Microsoft Edge|Google Chrome)$/.test(b.brand)).sort((a,b) => a.brand.localeCompare(b.brand)) });
+  });
+  const canvas = document.createElement('canvas'); canvas.width = 360; canvas.height = 100;
+  const ctx = canvas.getContext('2d');
+  await measure('Fonts', () => {
+    if (!ctx) throw new Error('Canvas unavailable');
+    // Multi-face, width and ink-bounds comparison informed by MyIP's MIT font probe.
+    const fonts = ['Arial', 'Consolas', 'Segoe UI', 'Times New Roman', 'Calibri', 'Cambria', 'Courier New',
+      'Microsoft YaHei', 'Microsoft YaHei UI', 'SimSun', 'NSimSun', 'SimHei', 'DengXian', 'FangSong', 'KaiTi', 'Microsoft JhengHei',
+      'MingLiU', 'PingFang SC', 'PingFang TC', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK JP',
+      'Yu Gothic', 'Meiryo', 'Malgun Gothic', 'MiSans', 'HarmonyOS Sans SC', 'OPPO Sans', 'Alibaba PuHuiTi', 'Segoe UI Emoji'];
+    const samples = ['mmmmmmmmmmlli012345', '中文繁體あ한😀'];
+    const metrics = (font, sample) => {
+      ctx.font = `72px ${font}`; const m = ctx.measureText(sample);
+      return [m.width, m.actualBoundingBoxAscent, m.actualBoundingBoxDescent].join('|');
+    };
+    const found = fonts.filter(font => ['monospace', 'sans-serif', 'serif'].some(base =>
+      samples.some(sample => metrics(`"${font}", ${base}`, sample) !== metrics(base, sample))));
+    return `${fonts.length} 个样本中可区分 ${found.length} 个：${found.join('、') || '无'}。不等于完整安装字体清单。`;
+  });
+  await measure('FontMetrics', async () => {
+    if (!ctx) throw new Error('Canvas unavailable');
+    const values = ['Arial', 'serif', 'monospace'].map(font => {
+      ctx.font = `24px ${font}`; const m = ctx.measureText('AaBb0123456789 中文 ffi');
+      return [font, m.width, m.actualBoundingBoxLeft, m.actualBoundingBoxRight, m.actualBoundingBoxAscent, m.actualBoundingBoxDescent];
+    });
+    return await digest(values);
+  });
+  const drawCanvas = async () => {
+    if (!ctx) throw new Error('Canvas unavailable');
+    ctx.clearRect(0, 0, 360, 100);
+    ctx.fillStyle = '#e8f1f4'; ctx.fillRect(0, 0, 360, 100);
+    ctx.font = '20px Arial'; ctx.fillStyle = '#264d75';
+    ctx.fillText('Claude Launcher / Canvas 012 中文', 8, 30);
+    ctx.fillStyle = 'rgba(210,80,40,0.5)'; ctx.beginPath(); ctx.arc(120, 55, 26, 0, Math.PI * 2); ctx.fill();
+    return hashBytes(ctx.getImageData(0, 0, 360, 100).data);
+  };
+  await measure('Canvas', drawCanvas);
+  await measure('CanvasRepeat', async () => {
+    if (!fingerprint.Canvas) throw new Error('Canvas unavailable');
+    return fingerprint.Canvas === await drawCanvas() ? '同一次检测内两次绘图摘要一致' : '同一次检测内两次绘图摘要不同；需复核渲染或隐私保护行为';
+  });
+  await measure('Emoji', async () => {
+    if (!ctx) throw new Error('Canvas unavailable');
+    ctx.clearRect(0, 0, 360, 100); ctx.fillStyle = '#000'; ctx.font = '32px "Segoe UI Emoji", sans-serif';
+    ctx.fillText('😀 🌏 🇯🇵 🇺🇸 🇹🇼', 8, 50);
+    return hashBytes(ctx.getImageData(0, 0, 360, 100).data);
+  });
+  await measure('EmojiStyle', () => {
+    if (!ctx) throw new Error('Canvas unavailable');
+    return ['😀', '🌏', '🇯🇵', '🇺🇸', '🇹🇼'].map(glyph => {
+      ctx.clearRect(0,0,360,100); ctx.fillStyle = '#000'; ctx.fillText(glyph,8,50);
+      const pixels = ctx.getImageData(0,0,100,80).data; let ink = 0, color = 0;
+      for (let i=0;i<pixels.length;i+=4) if (pixels[i+3] > 32) {
+        ink++; if (Math.max(pixels[i],pixels[i+1],pixels[i+2])-Math.min(pixels[i],pixels[i+1],pixels[i+2]) > 20) color++;
+      }
+      return `${glyph}：${ink ? (color/ink > 0.03 ? '含彩色像素' : '以单色像素为主') : '无可见像素'}`;
+    }).join('；') + '。单色可能是字母、缺字方框或字体实现，不判断地区。';
+  });
+  const gl = document.createElement('canvas').getContext('webgl');
+  await measure('WebGL', () => {
+    if (!gl) throw new Error('WebGL unavailable');
+    const debug = gl.getExtension('WEBGL_debug_renderer_info');
+    return debug ? `${gl.getParameter(debug.UNMASKED_VENDOR_WEBGL)} / ${gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)}`
+      : `${gl.getParameter(gl.VENDOR)} / ${gl.getParameter(gl.RENDERER)}（详细信息不可用）`;
+  });
+  await measure('WebGLCapabilities', () => {
+    if (!gl) throw new Error('WebGL unavailable');
+    const limits = ['MAX_TEXTURE_SIZE','MAX_CUBE_MAP_TEXTURE_SIZE','MAX_RENDERBUFFER_SIZE','MAX_VERTEX_ATTRIBS','MAX_TEXTURE_IMAGE_UNITS','MAX_VERTEX_UNIFORM_VECTORS','MAX_FRAGMENT_UNIFORM_VECTORS'];
+    const data = {version: gl.getParameter(gl.VERSION), shader: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)};
+    limits.forEach(key => {data[key] = gl.getParameter(gl[key]);});
+    const precision = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER,gl.HIGH_FLOAT);
+    data.highFloat = precision ? [precision.rangeMin,precision.rangeMax,precision.precision] : null;
+    data.extensions = (gl.getSupportedExtensions() || []).sort();
+    return stable(data);
+  });
+  if (gl) { const lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext(); }
+  await measure('Audio', async () => {
+    if (!window.OfflineAudioContext) throw new Error('OfflineAudioContext unavailable');
+    const audio = new OfflineAudioContext(1, 5000, 44100);
+    const oscillator = audio.createOscillator(), compressor = audio.createDynamicsCompressor();
+    oscillator.type = 'triangle'; oscillator.frequency.value = 10000;
+    compressor.threshold.value = -50; compressor.knee.value = 40; compressor.ratio.value = 12;
+    compressor.attack.value = 0; compressor.release.value = 0.25;
+    oscillator.connect(compressor); compressor.connect(audio.destination); oscillator.start(0);
+    let timeout;
+    try {
+      const buffer = await Promise.race([audio.startRendering(), new Promise((_,reject) => {
+        timeout = setTimeout(() => reject(new Error('OfflineAudioTimeout')), 2000);
+      })]);
+      return await hashBytes(buffer.getChannelData(0).buffer);
+    } finally {clearTimeout(timeout); oscillator.disconnect(); compressor.disconnect();}
+  });
+  await measure('Storage', () => {
+    const values = {};
+    for (const key of ['localStorage','sessionStorage']) {
+      try {
+        const storage = window[key], token = 'probe-' + crypto.randomUUID();
+        storage.setItem(token,'1'); values[key] = storage.getItem(token) === '1'; storage.removeItem(token);
+      } catch (error) { values[key] = error.name; }
+    }
+    values.indexedDB_API = !!window.indexedDB; values.Cache_API = !!window.caches;
+    return stable(values) + '（临时配置；IndexedDB / Cache 仅检查 API 是否存在）';
+  });
+  fingerprint.Plugins = stable({plugins: Array.from(navigator.plugins,p => p.name).sort(),
+    mime: Array.from(navigator.mimeTypes,m => m.type).sort(), pdfViewer: navigator.pdfViewerEnabled});
+  fingerprint.Media = ['video/mp4; codecs="avc1.42E01E"','video/webm; codecs="vp9"','audio/ogg; codecs="opus"','audio/mpeg'].map(type =>
+    type + ' = ' + (document.createElement('video').canPlayType(type) || '未报告支持')).join('；');
+  fingerprint.Math = await digest([Math.acos(0.123),Math.asinh(1),Math.atanh(0.5),Math.sin(1e20),Math.cos(1e20),Math.exp(1),Math.log1p(0.1),Math.cbrt(2)]);
+  await measure('Timezone', () => Intl.DateTimeFormat().resolvedOptions().timeZone);
+  await measure('Languages', () => Array.from(navigator.languages).join('、'));
+  await measure('Locale', () => Intl.DateTimeFormat().resolvedOptions().locale);
+  await measure('TimezoneOffset', () => {
+    const minutes = -new Date().getTimezoneOffset();
+    const absolute = Math.abs(minutes);
+    return `UTC${minutes >= 0 ? '+' : '-'}${String(Math.floor(absolute / 60)).padStart(2, '0')}:${String(absolute % 60).padStart(2, '0')}（当前日期，含夏令时）`;
+  });
+  return fingerprint;
+}
+async function finish(timedOut) {
+  if (finished) return;
+  finished = true;
+  clearTimeout(timer);
+  result.TimedOut = timedOut;
+  if (peer) peer.close();
+  await fetch(config.callback, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(result),
+    cache: 'no-store'
+  });
+  document.body.textContent = '检测结果已交回本地助手。';
+}
+(async () => {
+  try {
+    if (config.mode === 'Fingerprint') {
+      result.Fingerprint = await collectFingerprint();
+      await finish(false);
+      return;
+    }
+    peer = new RTCPeerConnection({
+      iceServers: config.urls.length ? [{ urls: config.urls }] : [],
+      iceCandidatePoolSize: 0
+    });
+    peer.onicecandidate = event => {
+      if (!event.candidate) { void finish(false); return; }
+      const candidate = event.candidate;
+      const fields = candidate.candidate.split(' ');
+      if (result.Candidates.length < 64) {
+        result.Candidates.push({
+          Address: candidate.address || fields[4],
+          Type: candidate.type || fields[7],
+          Protocol: candidate.protocol || fields[2]
+        });
+      }
+    };
+    peer.onicecandidateerror = event => {
+      if (result.Errors.length < 16)
+        result.Errors.push({ Code: event.errorCode, Server: event.url });
+    };
+    timer = setTimeout(() => { void finish(true); }, 8000);
+    peer.createDataChannel('local-probe');
+    await peer.setLocalDescription(await peer.createOffer());
+  } catch (error) {
+    result.Error = error.message;
+    await finish(false);
+  }
+})();
+</script></body></html>
